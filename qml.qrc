@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>SelectionPage.qml</file>
+        <file>UART.qml</file>
+        <file>CAN.qml</file>
+        <file>Images/backButton.png</file>
+    </qresource>
+</RCC>
