@@ -299,7 +299,9 @@ Item {
                             topMargin: 12
                             horizontalCenter: thirdRectangle.horizontalCenter
                         }
-                        onClicked: readMessageInput.clear()
+                        onClicked:  {
+                            readMessageInput.clear()
+                        }
                     }
                 }
             }
@@ -321,12 +323,10 @@ Item {
         MouseArea {
             anchors.fill: parent
             onClicked: {
-                if(socketCan.isConnected === true) {
-                    console.log("Please disconnect the app first")
-                    backButton.enabled = false
+                if (socketCan.deviceState === SocketCan.ConnectedState) {
+                    console.log("Please disconnect the app first");
                 } else {
-                    backButton.enabled = true
-                    stackView.pop()
+                    stackView.pop();
                 }
             }
         }
@@ -341,4 +341,3 @@ Item {
         thirdRectangle.border.color = defaultRectangleBorderColor
     }
 }
-
