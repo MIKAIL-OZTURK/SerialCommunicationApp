@@ -10,7 +10,7 @@ Item {
         id: socketCan
         onDataReceived: {
             console.log("Received data: ID = " + ID + ", message = " + message);
-            readMessageInput.text = parseInt(ID).toString(16) + " # " + message + "\n";
+            readMessageInput.text = ID + " # " + message + "\n";
         }
     }
 
@@ -38,24 +38,57 @@ Item {
                         color: defaultRectangleBorderColor
                     }
                     radius: 5
-                    Label {
-                        id: canTypeLabel
-                        text: "Can Type"
-                        font {
-                            pointSize: 26
-                            bold: true
-                        }
+                    Row {
+                        id: rowCanType
+                        spacing: 50
                         anchors {
                             top: firstRectangle.top
-                            topMargin: 50
+                            topMargin: 40
                             horizontalCenter: firstRectangle.horizontalCenter
                         }
+                        Label {
+                            id: canTypeLabel
+                            text: "Can Type"
+                            font {
+                                pointSize: 16
+                                bold: true
+                            }
+
+                        }
+                        TextField {
+                            id: selectCanTextField
+                            width: 190
+                            placeholderText: "Enter CAN type"
+                        }
                     }
-                    TextField {
-                        id: selectCanTextField
-                        width: 240
-                        placeholderText: "Enter CAN type"
-                        anchors.centerIn: firstRectangle
+                    Row {
+                        id: rowCanBitRate
+                        spacing: 64
+                        anchors {
+                            top: rowCanType.bottom
+                            topMargin: 40
+                            horizontalCenter: firstRectangle.horizontalCenter
+                        }
+                        Label {
+                            id: canBitRateLabel
+                            text: "BitRate"
+                            font {
+                                pointSize: 16
+                                bold: true
+                            }
+                        }
+                        ComboBox {
+                            id: bitRateComboBox
+                            width: 190
+                            currentIndex: 2
+                            model: ListModel {
+                                id: bitRateValues
+                                ListElement { text: "125 kbps" }
+                                ListElement { text: "250 kbps" }
+                                ListElement { text: "500 kbps" }
+                                ListElement { text: "1000 kbps" }
+                            }
+                        }
                     }
                     Row {
                         id: rowConnectArea
@@ -70,6 +103,7 @@ Item {
                             text: "Connect"
                             onClicked:  {
                                 socketCan.connectSocket()
+                                socketCan.bindSocket(selectCanTextField.text)
                                 firstRectangle.border.color = activeRectangleBorderColor
                                 secondColumn.enabled = true
                                 thirdColumn.enabled = true
@@ -82,8 +116,8 @@ Item {
                             onClicked: {
                                 socketCan.disconnectSocket()
                                 resetRectanglesBorderColor()
-                                secondColumn.enabled = true
-                                thirdColumn.enabled = true
+                                secondColumn.enabled = false
+                                thirdColumn.enabled = false
                                 console.log("Disconnection Successful")
                             }
                         }
@@ -149,39 +183,16 @@ Item {
                             placeholderText: "Please leave a space"
                         }
                     }
-                    Row {
-                        id: rowCanBitRate
-                        spacing: 64
-                        anchors {
-                            top: rowPayload.bottom
-                            topMargin: 40
-                            horizontalCenter: secondRectangle.horizontalCenter
-                        }
-                        Label {
-                            id: canBitRateLabel
-                            text: "BitRate"
-                            font {
-                                pointSize: 16
-                                bold: true
-                            }
-                        }
-                        TextField {
-                            id: canBitRateTextField
-                            width: 190
-                            placeholderText: "Enter your data length"
-                        }
-                    }
                     Button {
                         id: sendButton
                         text: "Send"
                         anchors {
-                            top: rowCanBitRate.bottom
-                            topMargin: 40
+                            bottom: secondRectangle.bottom
+                            bottomMargin: 50
                             horizontalCenter: secondRectangle.horizontalCenter
                         }
                         onClicked: {
                             socketCan.sendData(idTextField.text, payloadTextField.text)
-                            payloadTextField.clear()
                             secondRectangle.border.color = activeRectangleBorderColor
                         }
                     }
