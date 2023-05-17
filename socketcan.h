@@ -4,7 +4,6 @@
 #include <QTimer>
 #include <QCanBusFrame>
 #include <QCanBusDevice>
-#include <QCanBusDeviceInfo>
 
 class SocketCan : public QObject
 {
@@ -38,15 +37,13 @@ public:
 	CanBusStatus busStatus() const;
 
 signals:
-
-signals:
 	void dataReceived(QString ID, const QString& message);
 	void deviceStateChanged();
 	void busStatusChanged();
 
 public slots:
 	void connectSocket();
-	void bindSocket();
+	void bindSocket(const QString &can, const QString &bitRate);
 	void readData();
 	void sendData(const QString &ID, const QString &message);
 	void disconnectSocket();
@@ -58,6 +55,7 @@ private:
 	CanBusDeviceState m_deviceState;
 	CanBusStatus m_busStatus;
 	QString lastID;
+	QString m_bitRate;
 };
 
 #endif // SOCKETCAN_H
