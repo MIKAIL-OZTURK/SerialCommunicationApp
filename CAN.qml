@@ -9,8 +9,8 @@ Item {
     SocketCan {
         id: socketCan
         onDataReceived: {
-            console.log("Received data: " + message);
-            readMessageInput.text = readMessageInput.text + "\n" + message
+            console.log("Received data: ID = " + ID + ", message = " + message);
+            readMessageInput.text = parseInt(ID).toString(16) + " # " + message + "\n";
         }
     }
 
@@ -39,36 +39,30 @@ Item {
                     }
                     radius: 5
                     Label {
+                        id: canTypeLabel
                         text: "Can Type"
                         font {
-                            pointSize: 20
+                            pointSize: 26
                             bold: true
                         }
                         anchors {
-                            bottom: frame.top
-                            bottomMargin: 40
+                            top: firstRectangle.top
+                            topMargin: 50
                             horizontalCenter: firstRectangle.horizontalCenter
                         }
                     }
-                    Frame {
-                        id: frame
+                    TextField {
+                        id: selectCanTextField
+                        width: 240
+                        placeholderText: "Enter CAN type"
                         anchors.centerIn: firstRectangle
-                        ColumnLayout {
-                            spacing: 20
-                            RadioButton {
-                                checked: true
-                                text: qsTr("vcan0")
-                            }
-                            RadioButton {
-                                text: qsTr("vcan1")
-                            }
-                        }
                     }
                     Row {
-                        spacing: 10
+                        id: rowConnectArea
+                        spacing: 15
                         anchors {
-                            top: frame.bottom
-                            topMargin: 40
+                            bottom: firstRectangle.bottom
+                            bottomMargin: 50
                             horizontalCenter: firstRectangle.horizontalCenter
                         }
                         Button {
@@ -77,6 +71,8 @@ Item {
                             onClicked:  {
                                 socketCan.connectSocket()
                                 firstRectangle.border.color = activeRectangleBorderColor
+                                secondColumn.enabled = true
+                                thirdColumn.enabled = true
                                 console.log("Connection Successful")
                             }
                         }
@@ -86,6 +82,8 @@ Item {
                             onClicked: {
                                 socketCan.disconnectSocket()
                                 resetRectanglesBorderColor()
+                                secondColumn.enabled = true
+                                thirdColumn.enabled = true
                                 console.log("Disconnection Successful")
                             }
                         }
@@ -95,6 +93,8 @@ Item {
 
             //Column2: Transmit Message Area
             Column {
+                id: secondColumn
+                enabled: false
                 Rectangle {
                     id: secondRectangle
                     width: 380
@@ -110,7 +110,7 @@ Item {
                         spacing: 50
                         anchors {
                             top: secondRectangle.top
-                            topMargin: 30
+                            topMargin: 40
                             horizontalCenter: secondRectangle.horizontalCenter
                         }
                         Label {
@@ -125,24 +125,14 @@ Item {
                             id: idTextField
                             width: 190
                             placeholderText: "Enter ID hex or decimal"
-                            onTextChanged: {
-                                if(idTextField.text === "555" || idTextField.text === "0x22B") {
-                                    console.log("ID Confirmed! Please enter your message in hex format...")
-                                    payloadTextField.enabled =  true
-                                }
-                                else {
-                                    console.log("Authentication Failed!")
-                                    payloadTextField.enabled = false
-                                }
-                            }
                         }
                     }
                     Row {
                         id: rowPayload
-                        spacing: 10
+                        spacing: 60
                         anchors {
                             top: rowID.bottom
-                            topMargin: 30
+                            topMargin: 40
                             horizontalCenter: secondRectangle.horizontalCenter
                         }
                         Label {
@@ -151,87 +141,46 @@ Item {
                                 pointSize: 16
                                 bold: true
                             }
-                            text: "Payload (hex)"
+                            text: "Payload"
                         }
                         TextField {
                             id: payloadTextField
-                            enabled: false
                             width: 190
                             placeholderText: "Please leave a space"
-                            onTextChanged: {
-                                if (idTextField.text !== "") {
-                                    sendButton.enabled = true
-                                }
-                            }
                         }
                     }
                     Row {
-                        id: rowFrameType
-                        spacing: 24
+                        id: rowCanBitRate
+                        spacing: 64
                         anchors {
                             top: rowPayload.bottom
-                            topMargin: 30
+                            topMargin: 40
                             horizontalCenter: secondRectangle.horizontalCenter
                         }
                         Label {
-                            id: frameTypeLabel
-                            text: "Frame Type"
+                            id: canBitRateLabel
+                            text: "BitRate"
                             font {
                                 pointSize: 16
                                 bold: true
                             }
                         }
-                        ComboBox {
-                            id: frameTypeComboBox
+                        TextField {
+                            id: canBitRateTextField
                             width: 190
-                            currentIndex: 0
-                            textRole: "text"
-                            valueRole: "choice"
-                            model: ListModel {
-                                ListElement { text: "Data Frame"; choice: SocketCan.DataFrame }
-                                ListElement { text: "Error Frame"; choice: SocketCan.ErrorFrame }
-                                ListElement { text: "Remote Request Frame"; choice: SocketCan.RemoteRequestFrame }
-                            }
-                        }
-                    }
-                    Row {
-                        id: rowFrameOptions
-                        spacing: 6
-                        anchors {
-                            top: rowFrameType.bottom
-                            topMargin: 30
-                            horizontalCenter: secondRectangle.horizontalCenter
-                        }
-                        Label {
-                            id: frameOptionsLabel
-                            text: "Frame Option"
-                            font {
-                                pointSize: 16
-                                bold: true
-                            }
-                        }
-                        ComboBox {
-                            id: frameOptionsComboBox
-                            width: 190
-                            currentIndex: 0
-                            textRole: "text"
-                            valueRole: "choice"
-                            model: ListModel {
-                                ListElement { text: "Extended Format" }
-                                ListElement { text: "Flexible Data-Rate" }
-                            }
+                            placeholderText: "Enter your data length"
                         }
                     }
                     Button {
                         id: sendButton
                         text: "Send"
                         anchors {
-                            top: rowFrameOptions.bottom
-                            topMargin: 30
+                            top: rowCanBitRate.bottom
+                            topMargin: 40
                             horizontalCenter: secondRectangle.horizontalCenter
                         }
                         onClicked: {
-                            socketCan.sendData(payloadTextField.text)
+                            socketCan.sendData(idTextField.text, payloadTextField.text)
                             payloadTextField.clear()
                             secondRectangle.border.color = activeRectangleBorderColor
                         }
@@ -241,6 +190,8 @@ Item {
 
             //Column3: Receive Message Area
             Column {
+                id: thirdColumn
+                enabled: false
                 Rectangle {
                     id: thirdRectangle
                     width: 380
@@ -307,6 +258,7 @@ Item {
             }
         }
     }
+
 
     //BackButton
     Image {
