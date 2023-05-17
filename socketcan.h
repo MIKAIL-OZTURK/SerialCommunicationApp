@@ -15,6 +15,14 @@ public:
 	explicit SocketCan(QObject *parent = nullptr);
 	~SocketCan();
 
+	enum BitRates {
+		BitRates125KBits = 125000,
+		BitRates250KBits = 250000,
+		BitRates500KBits = 500000,
+		BitRates1000Bits = 1000000
+	};
+	Q_ENUM(BitRates)
+
 	enum CanBusDeviceState {
 		UnconnectedState,
 		ConnectingState,
@@ -32,7 +40,6 @@ public:
 	};
 	Q_ENUM(CanBusStatus)
 
-	bool isConnected() const;
 	CanBusDeviceState deviceState() const;
 	CanBusStatus busStatus() const;
 
@@ -54,7 +61,6 @@ private:
 	bool m_socketCreated;
 	CanBusDeviceState m_deviceState;
 	CanBusStatus m_busStatus;
-	QString lastID;
 	QString m_bitRate;
 };
 
