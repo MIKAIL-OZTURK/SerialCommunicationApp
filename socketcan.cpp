@@ -10,7 +10,6 @@
 
 SocketCan::SocketCan(QObject *parent)
 	: QObject(parent),
-	  m_canId(555),
 	  m_canSocket(-1),
 	  m_timer(this),
 	  m_socketCreated(false),
@@ -23,20 +22,6 @@ SocketCan::SocketCan(QObject *parent)
 SocketCan::~SocketCan()
 {
 	disconnectSocket();
-}
-
-// Getter and setter for CAN ID
-int SocketCan::canId() const
-{
-	return m_canId;
-}
-
-void SocketCan::setCanId(int id)
-{
-	if (m_canId != id) {
-		m_canId = id;
-		emit canIdChanged();
-	}
 }
 
 // Check if socket is connected
@@ -62,8 +47,8 @@ void SocketCan::connectSocket()
 
 	// Set flag to indicate socket has been created
 	m_socketCreated = true;
-	m_deviceState = ConnectingState;
-	m_busStatus = Good;
+	m_deviceState = CanBusDeviceState::ConnectingState;
+	m_busStatus = CanBusStatus::Good;
 	bindSocket();
 }
 
@@ -101,9 +86,8 @@ void SocketCan::bindSocket()
 
 	// Start timer
 	m_timer.start(50);
-	m_deviceState = ConnectedState;
+	m_deviceState = CanBusDeviceState::ConnectedState;
 }
-
 // Read data from the socket
 void SocketCan::readData()
 {
@@ -115,12 +99,14 @@ void SocketCan::readData()
 	struct can_frame frame;
 	QString message;
 
-	if (m_deviceState == ConnectedState) {
+	if (m_deviceState == CanBusDeviceState::ConnectedState) {
 		const ssize_t nbytes = read(m_canSocket, &frame, sizeof(frame));
 
 		// Convert the data in the CAN frame to a QString for display
-		for (const auto &data : frame.data) {
-			message.append(QString("%1 ").arg(data, 2, 16, QLatin1Char('0')));
+		for (int i = 0; i < frame.can_dlc; i++) {
+			if (frame.data[i] != 0) {
+				message.append(QString("%1 ").arg(frame.data[i], 2, 16, QLatin1Char('0')));
+			}
 		}
 
 		if (nbytes <= 0) {
@@ -138,34 +124,33 @@ void SocketCan::readData()
 		}
 
 		// Emit a signal with the received data
-		emit dataReceived(message.trimmed());
+		emit dataReceived(QString::number(frame.can_id), message.trimmed());
 		emit busStatusChanged();
 	}
 }
 
 
+
 // Send data to the socket
-void SocketCan::sendData(const QString &message)
+void SocketCan::sendData(const QString &ID, const QString &message)
 {
 	if (m_canSocket == -1) {
 		qWarning("Socket not created");
 		return;
 	}
 
-	if (m_deviceState == ConnectedState) {
+	if (m_deviceState == CanBusDeviceState::ConnectedState) {
 		// Create CAN frame
 		struct can_frame frame;
-		frame.can_id = m_canId;
-		frame.can_dlc = 8;
+		frame.can_id = ID.toInt(nullptr, 16);
 
-		if (frame.can_dlc > 8) {
-			qWarning("Payload size must be between 0 and 8");
-			return;
-		}
+		// Initialize the frame data with zeros
+		memset(frame.data, 0, sizeof(frame.data));
 
 		// Convert message string to data bytes
 		QStringList parts = message.split(" ");
-		for (int i = 0; i < frame.can_dlc && i < parts.size(); ++i) {
+		frame.can_dlc = parts.size() > 8 ? 8: parts.size();
+		for (int i = 0; i < frame.can_dlc; ++i) {
 			bool ok = false;
 			frame.data[i] = static_cast<unsigned char>(parts[i].toUInt(&ok, 16));
 			if (!ok) {
@@ -179,8 +164,10 @@ void SocketCan::sendData(const QString &message)
 		if (nbytes != sizeof(frame)) {
 			qWarning("Error sending CAN data");
 		}
+		emit dataReceived(QString::number(frame.can_id, 16), message.trimmed());
 	}
 }
+
 
 // Disconnect the Socket
 void SocketCan::disconnectSocket()
@@ -189,11 +176,12 @@ void SocketCan::disconnectSocket()
 		close(m_canSocket);
 		m_canSocket = -1;
 		m_timer.stop();
-		m_deviceState = ClosingState;
-		m_busStatus = BusOff;
+		m_deviceState = CanBusDeviceState::ClosingState;
+		m_busStatus = CanBusStatus::BusOff;
 	}
 }
 
+//Getter for deviceState and busStatus
 SocketCan::CanBusDeviceState SocketCan::deviceState() const
 {
 	return m_deviceState;
