@@ -80,13 +80,18 @@ Item {
                         ComboBox {
                             id: bitRateComboBox
                             width: 190
-                            currentIndex: 2
+                            currentIndex: 1
+                            textRole: "text"
+                            valueRole: "choice"
                             model: ListModel {
                                 id: bitRateValues
-                                ListElement { text: "125 kbps" }
-                                ListElement { text: "250 kbps" }
-                                ListElement { text: "500 kbps" }
-                                ListElement { text: "1000 kbps" }
+                                ListElement { text: "125";  /* choice: socketCan.BitRate125Kbps */ }
+                                ListElement { text: "250";  /* choice: socketCan.BitRate250Kbps */ }
+                                ListElement { text: "500";  /* choice: socketCan.BitRate500Kbps */ }
+                                ListElement { text: "1000"; /* choice: socketCan.BitRate1000Kbps */ }
+                            }
+                            onSelectTextByMouseChanged: {
+                                socketCan.setBitRate(bitRateValues.get(currentIndex).value);
                             }
                         }
                     }
@@ -103,7 +108,7 @@ Item {
                             text: "Connect"
                             onClicked:  {
                                 socketCan.connectSocket()
-                                socketCan.bindSocket(selectCanTextField.text)
+                                socketCan.bindSocket(selectCanTextField.text, bitRateComboBox.currentText)
                                 firstRectangle.border.color = activeRectangleBorderColor
                                 secondColumn.enabled = true
                                 thirdColumn.enabled = true
