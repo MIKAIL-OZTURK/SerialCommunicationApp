@@ -2,11 +2,14 @@
 #include <fcntl.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
+#include <linux/can/netlink.h>
 #include <net/if.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <cerrno>
+#include <libsocketcan.h>
 
 SocketCan::SocketCan(QObject *parent)
 	: QObject(parent),
@@ -22,12 +25,6 @@ SocketCan::SocketCan(QObject *parent)
 SocketCan::~SocketCan()
 {
 	disconnectSocket();
-}
-
-// Check if socket is connected
-bool SocketCan::isConnected() const
-{
-	return m_canSocket >= 0;
 }
 
 // Create and bind socket
@@ -51,7 +48,8 @@ void SocketCan::connectSocket()
 	m_busStatus = CanBusStatus::Good;
 }
 
-void SocketCan::bindSocket(const QString &can,const QString &bitRate)
+
+void SocketCan::bindSocket(const QString &can, const QString &bitRate)
 {
 	if (m_canSocket == -1) {
 		qWarning("Socket not created");
@@ -61,6 +59,13 @@ void SocketCan::bindSocket(const QString &can,const QString &bitRate)
 	// Set up interface
 	struct ifreq ifr{};
 	QByteArray canArray = can.toUtf8();
+
+	const uint32_t bitrate = bitRate.toInt() * 1000;
+	if( can_set_bitrate(canArray.constData(), bitrate) != 0 )
+	{
+		qWarning("Could not set bitrate to %d %s", bitrate, bitRate.constData());
+	}
+
 	strncpy(ifr.ifr_name, canArray.constData(), IFNAMSIZ - 1);
 	if (ioctl(m_canSocket, SIOCGIFINDEX, &ifr) == -1) {
 		qWarning("Interface setup failed: %s", strerror(errno));
@@ -90,6 +95,8 @@ void SocketCan::bindSocket(const QString &can,const QString &bitRate)
 	m_timer.start(50);
 	m_deviceState = CanBusDeviceState::ConnectedState;
 }
+
+
 // Read data from the socket
 void SocketCan::readData()
 {
