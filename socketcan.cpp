@@ -49,10 +49,9 @@ void SocketCan::connectSocket()
 	m_socketCreated = true;
 	m_deviceState = CanBusDeviceState::ConnectingState;
 	m_busStatus = CanBusStatus::Good;
-	bindSocket();
 }
 
-void SocketCan::bindSocket()
+void SocketCan::bindSocket(const QString &can,const QString &bitRate)
 {
 	if (m_canSocket == -1) {
 		qWarning("Socket not created");
@@ -61,7 +60,8 @@ void SocketCan::bindSocket()
 
 	// Set up interface
 	struct ifreq ifr{};
-	strncpy(ifr.ifr_name, "vcan0", IFNAMSIZ - 1);
+	QByteArray canArray = can.toUtf8();
+	strncpy(ifr.ifr_name, canArray.constData(), IFNAMSIZ - 1);
 	if (ioctl(m_canSocket, SIOCGIFINDEX, &ifr) == -1) {
 		qWarning("Interface setup failed: %s", strerror(errno));
 		close(m_canSocket);
@@ -71,6 +71,7 @@ void SocketCan::bindSocket()
 
 	// Bind Socket
 	struct sockaddr_can addr{};
+	memset(&addr, 0, sizeof(addr));
 	addr.can_family = AF_CAN;
 	addr.can_ifindex = ifr.ifr_ifindex;
 	if (bind(m_canSocket, reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr)) == -1) {
@@ -85,6 +86,7 @@ void SocketCan::bindSocket()
 	fcntl(m_canSocket, F_SETFL, flags | O_NONBLOCK);
 
 	// Start timer
+	m_bitRate = bitRate;
 	m_timer.start(50);
 	m_deviceState = CanBusDeviceState::ConnectedState;
 }
