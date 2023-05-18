@@ -60,10 +60,20 @@ void SocketCan::bindSocket(const QString &can, const QString &bitRate)
 	struct ifreq ifr{};
 	QByteArray canArray = can.toUtf8();
 
+	if( can_do_stop("can0") != 0 )
+	{
+		qWarning("Could not set the interface down.");
+	}
+
 	const uint32_t bitrate = bitRate.toInt() * 1000;
 	if( can_set_bitrate(canArray.constData(), bitrate) != 0 )
 	{
 		qWarning("Could not set bitrate to %d %s", bitrate, bitRate.constData());
+	}
+
+	if( can_do_start("can0") != 0 )
+	{
+		qWarning("Could not set the interface up.");
 	}
 
 	strncpy(ifr.ifr_name, canArray.constData(), IFNAMSIZ - 1);
@@ -120,7 +130,7 @@ void SocketCan::readData()
 
 		if (nbytes <= 0) {
 			if (nbytes < 0 && errno != EAGAIN) {
-				qWarning("Error reading CAN data");
+				perror("Error reading CAN data");
 			}
 			return;
 		}
